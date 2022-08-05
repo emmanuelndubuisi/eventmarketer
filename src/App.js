@@ -35,8 +35,8 @@ function App() {
 
         kit.defaultAccount = user_address;
 
-        await setAddress(user_address);
-        await setKit(kit);
+        setAddress(user_address);
+        setKit(kit);
       } catch (error) {
         console.log(error);
       }
@@ -65,7 +65,6 @@ function App() {
         const event = new Promise(async (resolve, reject) => {
           const _event = await contract.methods.getEvents(index).call();
           const date = new Date(_event[6] * 1000);
-          console.log(date);
           resolve({
             index: index,
             owner: _event[0],
@@ -85,7 +84,6 @@ function App() {
       console.log(e);
     }
   };
-
 
   const formSubmit = async (e) => {
     e.preventDefault();
@@ -112,46 +110,42 @@ function App() {
     try {
       const isExpired = await contract.methods.getIsExpired(index).call();
       if (isExpired) {
-        alert('Event has expired, Find another')
+        alert("Event has expired, Find another");
         return;
       }
       const cUSDContract = new kit.web3.eth.Contract(ierc, cUSDContractAddress);
-      const amount = new BigNumber(events[index].amount).shiftedBy(ERC20_DECIMALS).toString();
+      const amount = new BigNumber(events[index].amount)
+        .shiftedBy(ERC20_DECIMALS)
+        .toString();
       await cUSDContract.methods
         .approve(contractAddress, amount)
         .send({ from: address });
-      await contract.methods
-        .bookEvent(index)
-        .send({
-          from: address,
-        });
+      await contract.methods.bookEvent(index).send({
+        from: address,
+      });
       getBalance();
-      getEvents()
+      getEvents();
     } catch (error) {
       console.log(error);
     }
-
-  }
+  };
 
   const sellEventTicket = async (index) => {
     try {
-
       const isExpired = await contract.methods.getIsExpired(index).call();
       if (isExpired) {
-        alert('Event has expired, Find another')
+        alert("Event has expired, Find another");
         return;
       }
-      await contract.methods
-        .sellEvent(index)
-        .send({
-          from: address,
-        });
+      await contract.methods.sellEvent(index).send({
+        from: address,
+      });
       getBalance();
-      getEvents()
+      getEvents();
     } catch (error) {
       console.log(error);
     }
-  }
+  };
 
   useEffect(() => {
     initializeWallet();
@@ -173,7 +167,7 @@ function App() {
       <div>
         <header className="site-header sticky-top py-1">
           <nav className="container d-flex flex-column flex-md-row justify-content-between">
-            <a className="py-2" style={{color:"white"}} href="#">
+            <a className="py-2" style={{ color: "white" }} href="#">
               <h3>Event Market</h3>
             </a>
             <a className="py-2 d-none d-md-inline-block" href="#">
@@ -183,31 +177,53 @@ function App() {
         </header>
         <main>
           <div className="row row-cols-1 row-cols-md-3 mb-3 text-center">
-            {events.map(event => <div className="col">
-              <div className="card mb-4 rounded-3 shadow-sm">
-                <div className="card-header py-3">
-                  <h4 className="my-0 fw-bold">{event.name}</h4>
-                </div>
-                <div className="card-body">
-                  <h1 className="card-title pricing-card-title">${event.amount}<small className="text-muted fw-light">cUSD</small></h1>
-                  <img width={200} src={event.image} alt="" />
-                  <p className="list-unstyled mt-3 mb-4">
-                    {event.description}
-                  </p>
-                  {!event.booked ? <button type="button" onClick={() => bookEvent(event.index)} className="w-100 btn btn-lg btn-primary">Book Event</button>
-                    : event.owner === address ?
-                      <button type="button" onClick={() => sellEventTicket(event.index)} className="w-100 btn btn-lg btn-outline-danger">Sell Slot</button>
-                      : "Ticket has already been bought"}
+            {events.map((event) => (
+              <div className="col mt-4 ms-auto" key={event.index}>
+                <div className="card mb-4 rounded-3 shadow-sm">
+                  <div className="card-header py-3">
+                    <h4 className="my-0 fw-bold">{event.name}</h4>
+                  </div>
+                  <div className="card-body">
+                    <h1 className="card-title pricing-card-title">
+                      ${event.amount}
+                      <small className="text-muted fw-light">cUSD</small>
+                    </h1>
+                    <img width={200} src={event.image} alt="" />
+                    <p className="list-unstyled mt-3 mb-4">
+                      {event.description}
+                    </p>
+                    {!event.booked && event.owner !== address ? (
+                      <button
+                        type="button"
+                        onClick={() => bookEvent(event.index)}
+                        className="w-100 btn btn-lg btn-primary"
+                      >
+                        Book Event
+                      </button>
+                    ) : (
+                      ""
+                    )}
+                    {event.owner === address && event.booked ? (
+                      <button
+                        type="button"
+                        onClick={() => sellEventTicket(event.index)}
+                        className="w-100 btn btn-lg btn-outline-danger"
+                      >
+                        Sell Slot
+                      </button>
+                    ) : (
+                      "Ticket hasn been bought"
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>)}
+            ))}
           </div>
         </main>
 
-
-        <div className="p-3 w-50 justify-content-center">
-          <h2>Create Event</h2>
+        <div className="p-3 w-50">
           <div className="">
+            <h2>Create Event</h2>
             <form onSubmit={formSubmit}>
               <div className="form-floating mb-3">
                 <input
