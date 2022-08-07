@@ -34,8 +34,9 @@ contract EventMarketer{
         string image;
         string description;
         uint amount;
+        uint duration;
         bool booked;
-        uint timestamp;
+        uint endTimestamp;
     }
 
     uint uploadFee;
@@ -57,7 +58,7 @@ contract EventMarketer{
 
 
     modifier isExpired(uint _index){
-        require(block.timestamp < (events[_index].timestamp + 2 minutes), "Event has expired");
+        require(block.timestamp < (events[_index].endTimestamp), "Event has expired");
         _;
     }
     
@@ -65,6 +66,8 @@ contract EventMarketer{
         string memory _name,
         string memory _image,
         string memory _description,
+        //Duration in minutes
+        uint _duration,
         uint amount
     )public{
         require(
@@ -81,8 +84,10 @@ contract EventMarketer{
             _image,
             _description,
             amount,
+            _duration,
             false,
-            block.timestamp
+            //Duration in minutes
+            block.timestamp + _duration * 60
         );
         
         eventLength++;
@@ -105,12 +110,12 @@ contract EventMarketer{
             _event.description,
             _event.amount,
             _event.booked,
-            _event.timestamp
+            _event.endTimestamp
         );
     }
 
     function bookEvent(uint _index) public payable isExpired(_index){
-
+        require(msg.sender != events[_index].owner, "Owner can't book their event");
         require(
               IERC20Token(cUsdTokenAddress).transferFrom(
                 msg.sender,
@@ -122,12 +127,17 @@ contract EventMarketer{
         events[_index].booked = true;
     }
 
+    function changePrice(uint _index, uint _price)public isOwner(_index){
+        events[_index].amount = _price;
+    }
+
     function sellEvent(uint _index) public payable isOwner(_index) isExpired(_index){
         events[_index].booked = false;
+        events[_index].owner = payable(msg.sender);
     }
 
     function getIsExpired(uint _index) public view returns(bool){
-        if(block.timestamp > (events[_index].timestamp + 2 minutes)){
+        if(block.timestamp > (events[_index].endTimestamp)){
             return true;
         }
         return false;
